@@ -13,6 +13,9 @@ import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { MyContext } from "../context/MyContext";
 
 function Copyright(props) {
   return (
@@ -32,24 +35,49 @@ function Copyright(props) {
   );
 }
 
-// TODO remove, this demo shouldn't need to reset the theme.
-
 const defaultTheme = createTheme();
 
 export default function SignIn() {
+  const { checkFormData } = React.useContext(MyContext);
+
+  const formik = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validationSchema: Yup.object({
+      email: Yup.string()
+        .required("Email is required")
+        .email("Invalid email address"),
+      password: Yup.string().required("Password is required"),
+    }),
+    onSubmit: async (values) => {
+      const { email, password } = values;
+
+      try {
+        const isValid = await checkFormData(email, password);
+
+        if (isValid) {
+          gotoSignInScreen();
+          console.log("Successful login");
+        } else {
+          alert("Invalid login credentials");
+          formik.resetForm();
+
+          console.log("Invalid login credentials");
+        }
+      } catch (error) {
+        console.error("Error while checking form data:", error);
+      }
+    },
+  });
   const navigate = useNavigate();
 
   const gotoSignUp = () => {
     navigate("/sign-up");
   };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get("email"),
-      password: data.get("password"),
-    });
+  const gotoSignInScreen = () => {
+    navigate("/sign-in-screen");
   };
 
   return (
@@ -72,7 +100,7 @@ export default function SignIn() {
           </Typography>
           <Box
             component="form"
-            onSubmit={handleSubmit}
+            onSubmit={formik.handleSubmit}
             noValidate
             sx={{ mt: 1 }}
           >
@@ -85,6 +113,11 @@ export default function SignIn() {
               name="email"
               autoComplete="email"
               autoFocus
+              value={formik.values.email}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={formik.touched.email && Boolean(formik.errors.email)}
+              helperText={formik.touched.email && formik.errors.email}
             />
             <TextField
               margin="normal"
@@ -95,6 +128,11 @@ export default function SignIn() {
               type="password"
               id="password"
               autoComplete="current-password"
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={formik.touched.password && Boolean(formik.errors.password)}
+              helperText={formik.touched.password && formik.errors.password}
             />
             <FormControlLabel
               control={<Checkbox value="remember" color="primary" />}
@@ -108,28 +146,27 @@ export default function SignIn() {
             >
               Sign In
             </Button>
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mb: 2 }}
-              onClick={gotoSignUp}
-            >
-              Sign Up
-            </Button>
-            <Grid container>
-              <Grid item xs>
-                <Link href="#" variant="body2">
-                  Forgot password?
-                </Link>
-              </Grid>
-              <Grid item>
-                <Link href="#" variant="body2">
-                  {"Don't have an account? Sign Up"}
-                </Link>
-              </Grid>
-            </Grid>
           </Box>
+          <Button
+            fullWidth
+            variant="contained"
+            sx={{ mb: 2 }}
+            onClick={gotoSignUp}
+          >
+            Sign Up
+          </Button>
+          <Grid container>
+            <Grid item xs>
+              <Link href="#" variant="body2">
+                Forgot password?
+              </Link>
+            </Grid>
+            <Grid item>
+              <Link href="#" variant="body2">
+                {"Don't have an account? Sign Up"}
+              </Link>
+            </Grid>
+          </Grid>
         </Box>
         <Copyright sx={{ mt: 8, mb: 4 }} />
       </Container>
